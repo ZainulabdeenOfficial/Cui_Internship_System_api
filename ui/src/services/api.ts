@@ -17,7 +17,11 @@ import {
   AttendanceRequest,
   PerformanceComment,
   InternshipValidation,
-  ChangePasswordRequest
+  ChangePasswordRequest,
+  Grade,
+  GradeCreateRequest,
+  GradeUpdateRequest,
+  StudentSupervisors
 } from '../types';
 
 class ApiService {
@@ -329,6 +333,136 @@ class ApiService {
     return response.data;
   }
 
+  // Admin Internship Management
+  async getAdminInternships(): Promise<any[]> {
+    const response: AxiosResponse<any[]> = await this.api.get('/admin/internships');
+    return response.data;
+  }
+
+  async createAdminInternship(internshipData: any): Promise<void> {
+    await this.api.post('/admin/internships', internshipData);
+  }
+
+  async updateAdminInternshipStatus(id: number, status: string): Promise<void> {
+    await this.api.put(`/admin/internships/${id}/status`, { status });
+  }
+
+  async deleteAdminInternship(id: number): Promise<void> {
+    await this.api.delete(`/admin/internships/${id}`);
+  }
+
+  // Admin Certificate Management
+  async generateAdminCertificate(studentId: number): Promise<void> {
+    await this.api.post(`/admin/certificates/generate/${studentId}`);
+  }
+
+  async downloadAdminCertificate(certificateId: number): Promise<void> {
+    await this.api.get(`/admin/certificates/${certificateId}/download`);
+  }
+
+  // Admin Report Management
+  async getAdminWeeklyReports(): Promise<any[]> {
+    const response: AxiosResponse<any[]> = await this.api.get('/admin/reports/weekly');
+    return response.data;
+  }
+
+  async getAdminFinalReports(): Promise<any[]> {
+    const response: AxiosResponse<any[]> = await this.api.get('/admin/reports/final');
+    return response.data;
+  }
+
+  async reviewWeeklyReportAdmin(reportId: number, review: any): Promise<void> {
+    await this.api.put(`/admin/reports/weekly/${reportId}/review`, review);
+  }
+
+  async reviewFinalReportAdmin(reportId: number, review: any): Promise<void> {
+    await this.api.put(`/admin/reports/final/${reportId}/review`, review);
+  }
+
+  // Admin Dashboard Stats
+  async getAdminDashboardStats(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/admin/dashboard/stats');
+    return response.data;
+  }
+
+  // Student Profile Management
+  async updateStudentProfile(data: any): Promise<void> {
+    await this.api.put('/students/profile', data);
+  }
+
+  // Company Profile Management
+  async getCompanyInfo(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/company-supervisors/company-info');
+    return response.data;
+  }
+
+  async updateCompanyProfile(data: any): Promise<void> {
+    await this.api.put('/company-supervisors/company-profile', data);
+  }
+
+  // Certificate Download
+  async downloadCertificate(certificateId: number): Promise<void> {
+    const response = await this.api.get(`/certificates/${certificateId}/download`, {
+      responseType: 'blob'
+    });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `certificate-${certificateId}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  // Grade endpoints
+  async getGradesForInternship(internshipId: number): Promise<Grade[]> {
+    const response: AxiosResponse<Grade[]> = await this.api.get(`/grades/internship/${internshipId}`);
+    return response.data;
+  }
+
+  async getMyGrades(): Promise<any[]> {
+    const response: AxiosResponse<any[]> = await this.api.get('/grades/student/my-grades');
+    return response.data;
+  }
+
+  async createGrade(internshipId: number, gradeData: GradeCreateRequest): Promise<Grade> {
+    const response: AxiosResponse<Grade> = await this.api.post(`/grades/internship/${internshipId}`, gradeData);
+    return response.data;
+  }
+
+  async updateGrade(gradeId: number, gradeData: GradeUpdateRequest): Promise<Grade> {
+    const response: AxiosResponse<Grade> = await this.api.put(`/grades/${gradeId}`, gradeData);
+    return response.data;
+  }
+
+  async deleteGrade(gradeId: number): Promise<void> {
+    await this.api.delete(`/grades/${gradeId}`);
+  }
+
+  async getAllGrades(): Promise<Grade[]> {
+    const response: AxiosResponse<Grade[]> = await this.api.get('/grades/admin/all');
+    return response.data;
+  }
+
+  // Supervisor assignment endpoints
+  async assignUniversitySupervisor(studentId: number, supervisorId: number): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/admin/students/${studentId}/assign-supervisor`, { supervisorId });
+    return response.data;
+  }
+
+  async getStudentsWithSupervisors(): Promise<any[]> {
+    const response: AxiosResponse<any[]> = await this.api.get('/admin/students/with-supervisors');
+    return response.data;
+  }
+
+  // Student supervisor endpoints
+  async getMySupervisors(): Promise<StudentSupervisors[]> {
+    const response: AxiosResponse<StudentSupervisors[]> = await this.api.get('/students/supervisors');
+    return response.data;
+  }
 
 }
 

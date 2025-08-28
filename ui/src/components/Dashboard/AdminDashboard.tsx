@@ -24,11 +24,17 @@ import {
   CardGiftcard,
   TrendingUp,
   School,
-  Work
+  Work,
+  Description
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../services/api';
+import CertificateManagement from '../Admin/CertificateManagement';
+import SupervisorManagement from '../Admin/SupervisorManagement';
+import InternshipManagement from '../Admin/InternshipManagement';
+import ReportManagement from '../Admin/ReportManagement';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -54,12 +60,30 @@ function TabPanel(props: TabPanelProps) {
 const AdminDashboard: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const queryClient = useQueryClient();
+  const [createStudentOpen, setCreateStudentOpen] = useState(false);
+  const [studentForm, setStudentForm] = useState({ fullName: '', email: '', registrationNumber: '', password: '' });
 
   // Fetch data
-  const { data: stats } = useQuery('admin-stats', apiService.getDashboardStats);
-  const { data: students, isLoading: studentsLoading } = useQuery('students', apiService.getStudents);
-  const { data: companies, isLoading: companiesLoading } = useQuery('companies', apiService.getCompanies);
-  const { data: internships, isLoading: internshipsLoading } = useQuery('internships', apiService.getInternships);
+  const { data: stats } = useQuery('admin-stats', () => apiService.getDashboardStats(), {
+    refetchInterval: (data, query) => (query.state.error ? false : 5000),
+    refetchOnWindowFocus: false,
+    retry: 0,
+  });
+  const { data: students, isLoading: studentsLoading } = useQuery('students', () => apiService.getStudents(), {
+    refetchInterval: (data, query) => (query.state.error ? false : 5000),
+    refetchOnWindowFocus: false,
+    retry: 0,
+  });
+  const { data: companies, isLoading: companiesLoading } = useQuery('companies', () => apiService.getCompanies(), {
+    refetchInterval: (data, query) => (query.state.error ? false : 5000),
+    refetchOnWindowFocus: false,
+    retry: 0,
+  });
+  const { data: internships, isLoading: internshipsLoading } = useQuery('internships', () => apiService.getInternships(), {
+    refetchInterval: (data, query) => (query.state.error ? false : 5000),
+    refetchOnWindowFocus: false,
+    retry: 0,
+  });
 
   // Mutations
   const approveStudentMutation = useMutation(
@@ -72,6 +96,17 @@ const AdminDashboard: React.FC = () => {
     { onSuccess: () => queryClient.invalidateQueries('admin-stats') }
   );
 
+  const createStudentMutation = useMutation(
+    (payload: any) => apiService.createStudent(payload),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('students');
+        setCreateStudentOpen(false);
+        setStudentForm({ fullName: '', email: '', registrationNumber: '', password: '' });
+      }
+    }
+  );
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -82,6 +117,16 @@ const AdminDashboard: React.FC = () => {
 
   const handleGenerateCertificate = (studentId: number) => {
     generateCertificateMutation.mutate(studentId);
+  };
+
+  const handleCreateStudent = () => {
+    if (!studentForm.fullName || !studentForm.email || !studentForm.registrationNumber || !studentForm.password) return;
+    createStudentMutation.mutate({
+      fullName: studentForm.fullName,
+      email: studentForm.email,
+      registrationNumber: studentForm.registrationNumber,
+      password: studentForm.password
+    });
   };
 
   if (studentsLoading || companiesLoading || internshipsLoading) {
@@ -179,6 +224,8 @@ const AdminDashboard: React.FC = () => {
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="admin tabs">
           <Tab label="Students" />
           <Tab label="Companies" />
+          <Tab label="Supervisors" />
+          <Tab label="Internships" />
           <Tab label="Reports" />
           <Tab label="Certificates" />
         </Tabs>
@@ -188,6 +235,9 @@ const AdminDashboard: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             Student Management
           </Typography>
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+            <Button variant="contained" onClick={() => setCreateStudentOpen(true)}>Create Student</Button>
+          </Box>
           <TableContainer>
             <Table>
               <TableHead>
@@ -297,98 +347,73 @@ const AdminDashboard: React.FC = () => {
           </TableContainer>
         </TabPanel>
 
-        {/* Reports Tab */}
+        {/* Supervisors Tab */}
         <TabPanel value={tabValue} index={2}>
-          <Typography variant="h6" gutterBottom>
-            Reports Overview
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Weekly Reports
-                  </Typography>
-                  <Typography variant="h4" color="primary">
-                    {stats?.weeklyReports || 0}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Final Reports
-                  </Typography>
-                  <Typography variant="h4" color="success">
-                    {stats?.finalReports || 0}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Attendance Records
-                  </Typography>
-                  <Typography variant="h4" color="info">
-                    {stats?.attendanceRecords || 0}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+          <SupervisorManagement />
+        </TabPanel>
+
+        {/* Internships Tab */}
+        <TabPanel value={tabValue} index={3}>
+          <InternshipManagement />
+        </TabPanel>
+
+        {/* Reports Tab */}
+        <TabPanel value={tabValue} index={4}>
+          <ReportManagement />
         </TabPanel>
 
         {/* Certificates Tab */}
-        <TabPanel value={tabValue} index={3}>
-          <Typography variant="h6" gutterBottom>
-            Certificate Management
-          </Typography>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Student</TableCell>
-                  <TableCell>Company</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {internships?.filter((i: any) => i.status === 'Completed').map((internship: any) => (
-                  <TableRow key={internship.id}>
-                    <TableCell>{internship.student?.user?.fullName}</TableCell>
-                    <TableCell>{internship.company?.name}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={internship.certificate ? 'Issued' : 'Pending'}
-                        color={internship.certificate ? 'success' : 'warning' as any}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {!internship.certificate && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<CardGiftcard />}
-                          onClick={() => handleGenerateCertificate(internship.student?.id)}
-                          disabled={generateCertificateMutation.isLoading}
-                        >
-                          Generate Certificate
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+        <TabPanel value={tabValue} index={5}>
+          <CertificateManagement />
         </TabPanel>
       </Paper>
+
+      {/* Create Student Dialog */}
+      <Dialog open={createStudentOpen} onClose={() => setCreateStudentOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Student</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Full Name"
+            value={studentForm.fullName}
+            onChange={(e) => setStudentForm({ ...studentForm, fullName: e.target.value })}
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Email"
+            type="email"
+            value={studentForm.email}
+            onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Registration Number"
+            value={studentForm.registrationNumber}
+            onChange={(e) => setStudentForm({ ...studentForm, registrationNumber: e.target.value })}
+          />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Password"
+            type="password"
+            value={studentForm.password}
+            onChange={(e) => setStudentForm({ ...studentForm, password: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateStudentOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleCreateStudent}
+            variant="contained"
+            disabled={createStudentMutation.isLoading}
+          >
+            {createStudentMutation.isLoading ? 'Creating...' : 'Create Student'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

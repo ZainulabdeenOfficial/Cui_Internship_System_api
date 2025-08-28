@@ -40,10 +40,16 @@ public class StudentsController : ControllerBase
     [HttpGet("me/internships")]
     public async Task<IActionResult> MyInternships()
     {
-        var student = await _db.Students.Include(s => s.Internships).ThenInclude(i=> i.Company)
+        var student = await _db.Students
+            .Include(s => s.Internships)
+                .ThenInclude(i=> i.Company)
+            .Include(s => s.Internships)
+                .ThenInclude(i => i.UniversitySupervisor)!.ThenInclude(us => us!.User)
+            .Include(s => s.Internships)
+                .ThenInclude(i => i.Grades)
             .FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
         if(student == null) return NotFound();
-        return Ok(student.Internships.Select(i => new { i.Id, Company = i.Company!.Name, i.Status, i.StartDate, i.EndDate }));
+        return Ok(student.Internships.Select(i => new { i.Id, Company = i.Company!.Name, i.Status, i.StartDate, i.EndDate, UniversitySupervisor = i.UniversitySupervisor?.User?.FullName, Grades = i.Grades.Select(g=> new { g.Id, g.Component, g.Score, g.MaxScore }) }));
     }
 
     [HttpGet("attendance/{internshipId}")]
@@ -68,6 +74,7 @@ public class StudentsController : ControllerBase
                 a.CheckInTime,
                 a.CheckOutTime,
                 a.Notes,
+                a.Remarks,
                 Status = !string.IsNullOrEmpty(a.CheckInTime) && !string.IsNullOrEmpty(a.CheckOutTime) ? "Complete" :
                         !string.IsNullOrEmpty(a.CheckInTime) ? "Checked In" : "Absent"
             })
@@ -102,7 +109,6 @@ public class StudentsController : ControllerBase
         
         if (student == null) return NotFound();
 
-        // Check if company already exists
         var existingCompany = await _db.Companies
             .FirstOrDefaultAsync(c => c.Name.ToLower() == dto.Name.ToLower());
         
@@ -112,6 +118,9 @@ public class StudentsController : ControllerBase
         {
             Name = dto.Name,
             Address = dto.Address,
+            Phone = dto.Phone,
+            Email = dto.Email,
+            Description = dto.Description,
             IsApproved = false // Requires admin approval
         };
 

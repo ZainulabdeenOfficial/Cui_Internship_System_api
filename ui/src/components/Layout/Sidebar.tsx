@@ -20,7 +20,10 @@ import {
   People,
   Settings,
   Work,
-  EventNote
+  EventNote,
+  Person,
+  ManageAccounts,
+  SupervisorAccount
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -94,6 +97,24 @@ const menuItems: MenuItem[] = [
     icon: <Settings />,
     path: '/settings',
     roles: ['Admin']
+  },
+  {
+    text: 'My Profile',
+    icon: <Person />,
+    path: '/student-profile',
+    roles: ['Student']
+  },
+  {
+    text: 'Company Management',
+    icon: <ManageAccounts />,
+    path: '/company-management',
+    roles: ['CompanySupervisor']
+  },
+  {
+    text: 'Supervisor Management',
+    icon: <SupervisorAccount />,
+    path: '/university-supervisor-management',
+    roles: ['UniversitySupervisor']
   }
 ];
 

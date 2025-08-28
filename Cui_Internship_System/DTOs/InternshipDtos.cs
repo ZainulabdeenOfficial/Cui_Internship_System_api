@@ -3,10 +3,10 @@ using Cui_Internship_System.Models;
 namespace Cui_Internship_System.DTOs;
 
 // Company DTOs
-public record CreateCompanyDto(string Name, string Address, string? Notes = null);
-public record CompanyDto(int Id, string Name, string Address, bool IsApproved);
+public record CreateCompanyDto(string Name, string Address, string? Notes = null, string? Phone = null, string? Email = null, string? Description = null);
+public record CompanyDto(int Id, string Name, string Address, bool IsApproved, string? Phone, string? Email, string? Description);
 public record ApprovedCompanyDto(int Id, string Name);
-public record CompanyRequestDto(string Name, string Address);
+public record CompanyRequestDto(string Name, string Address, string? Phone = null, string? Email = null, string? Description = null);
 
 // Internship DTOs
 public record InternshipRequestDto(int CompanyId, int? CompanySupervisorId, int? UniversitySupervisorId, DateTime? StartDate, DateTime? EndDate);
@@ -32,3 +32,8 @@ public record AttendanceUpdateDto(string? CheckInTime, string? CheckOutTime, str
 
 // Performance / comments
 public record PerformanceCommentDto(int InternshipId, string Comments);
+
+// Grade DTOs
+public record GradeDto(int InternshipId, string Component, decimal Score, decimal MaxScore, string? Comments, string GradedBy);
+public record GradeCreateDto(string Component, decimal Score, decimal MaxScore = 100, string? Comments = null);
+public record GradeUpdateDto(decimal Score, decimal MaxScore = 100, string? Comments = null);

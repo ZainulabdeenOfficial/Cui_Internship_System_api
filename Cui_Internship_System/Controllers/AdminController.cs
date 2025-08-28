@@ -19,7 +19,7 @@ public class AdminController : ControllerBase
     public AdminController(AppDbContext db, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager) { _db = db; _userManager = userManager; _roleManager = roleManager; }
 
     // Companies
-    [HttpGet("companies/pending")] public async Task<IActionResult> PendingCompanies() => Ok(await _db.Companies.Where(c => !c.IsApproved).Select(c=> new { c.Id, c.Name, c.Address }).ToListAsync());
+    [HttpGet("companies/pending")] public async Task<IActionResult> PendingCompanies() => Ok(await _db.Companies.Where(c => !c.IsApproved).Select(c=> new { c.Id, c.Name, c.Address, c.Phone, c.Email, c.Description }).ToListAsync());
 
     [HttpPut("companies/{id}/approve")] // approve / reject
     public async Task<IActionResult> ApproveCompany(int id, ApprovalDto dto)
@@ -36,7 +36,7 @@ public class AdminController : ControllerBase
     {
         var exists = await _db.Companies.AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower());
         if (exists) return BadRequest("Company already exists");
-        var company = new Company { Name = dto.Name, Address = dto.Address, IsApproved = true }; // admin-created auto approved
+        var company = new Company { Name = dto.Name, Address = dto.Address, Phone = dto.Phone, Email = dto.Email, Description = dto.Description, IsApproved = true }; // admin-created auto approved
         _db.Companies.Add(company);
         await _db.SaveChangesAsync();
         return Ok(new { company.Id, company.Name, company.IsApproved });
@@ -88,6 +88,18 @@ public class AdminController : ControllerBase
         if(user != null) await _userManager.DeleteAsync(user);
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    // Assign university supervisor to an internship
+    [HttpPut("internships/{internshipId}/assign-university-supervisor")] public async Task<IActionResult> AssignUniversitySupervisor(int internshipId, AssignUniversitySupervisorDto dto)
+    {
+        var internship = await _db.Internships.FindAsync(internshipId);
+        if (internship == null) return NotFound("Internship not found");
+        var uniSup = await _db.UniversitySupervisors.FindAsync(dto.UniversitySupervisorId);
+        if (uniSup == null || !uniSup.IsActive) return BadRequest("University supervisor invalid or inactive");
+        internship.UniversitySupervisorId = uniSup.Id;
+        await _db.SaveChangesAsync();
+        return Ok(new { internship.Id, internship.UniversitySupervisorId });
     }
 
     // Company Supervisors
@@ -173,5 +185,74 @@ public class AdminController : ControllerBase
         var cert = new Certificate { InternshipId = internship.Id };
         _db.Certificates.Add(cert); await _db.SaveChangesAsync();
         return Ok(new { cert.Id, cert.CertificateNumber, cert.IssuedOn });
+    }
+
+    // Assign university supervisor to student's internship
+    [HttpPost("students/{studentId}/assign-supervisor")]
+    public async Task<IActionResult> AssignUniversitySupervisor(int studentId, AssignSupervisorDto dto)
+    {
+        var student = await _db.Students
+            .Include(s => s.Internships)
+            .FirstOrDefaultAsync(s => s.Id == studentId);
+        
+        if (student == null) return NotFound("Student not found");
+
+        var supervisor = await _db.UniversitySupervisors
+            .FirstOrDefaultAsync(s => s.Id == dto.SupervisorId);
+        
+        if (supervisor == null) return NotFound("University supervisor not found");
+
+        // Find the latest internship for the student
+        var internship = student.Internships
+            .OrderByDescending(i => i.Id)
+            .FirstOrDefault();
+        
+        if (internship == null) return NotFound("No internship found for student");
+
+        internship.UniversitySupervisorId = dto.SupervisorId;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { 
+            message = "University supervisor assigned successfully",
+            internshipId = internship.Id,
+            supervisorName = supervisor.User?.FullName,
+            supervisorEmail = supervisor.User?.Email
+        });
+    }
+
+    // Get students with their assigned supervisors
+    [HttpGet("students/with-supervisors")]
+    public async Task<IActionResult> GetStudentsWithSupervisors()
+    {
+        var students = await _db.Students
+            .Include(s => s.User)
+            .Include(s => s.Internships)
+            .ThenInclude(i => i.UniversitySupervisor)
+            .ThenInclude(us => us.User)
+            .Select(s => new
+            {
+                s.Id,
+                s.RegistrationNumber,
+                Name = s.User!.FullName,
+                Email = s.User.Email,
+                s.IsApproved,
+                LatestInternship = s.Internships
+                    .OrderByDescending(i => i.Id)
+                    .Select(i => new
+                    {
+                        i.Id,
+                        i.Status,
+                        UniversitySupervisor = i.UniversitySupervisor != null ? new
+                        {
+                            i.UniversitySupervisor.Id,
+                            Name = i.UniversitySupervisor.User!.FullName,
+                            Email = i.UniversitySupervisor.User.Email
+                        } : null
+                    })
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
+
+        return Ok(students);
     }
 }

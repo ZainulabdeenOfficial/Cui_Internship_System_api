@@ -30,7 +30,8 @@ const CompanySupervisorDashboard: React.FC = () => {
   // Fetch assigned students/internships
   const { data: assignedStudents, isLoading } = useQuery(
     'assigned-students',
-    apiService.getAssignedStudents
+    () => apiService.getAssignedStudents(),
+    { refetchInterval: 5000, refetchOnWindowFocus: true }
   );
 
   const getStats = () => {

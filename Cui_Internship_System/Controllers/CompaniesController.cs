@@ -20,15 +20,15 @@ public class CompaniesController : ControllerBase
     {
         var exists = await _db.Companies.AnyAsync(c=> c.Name.ToLower() == dto.Name.ToLower());
         if(exists) return BadRequest("Company already exists");
-        var company = new Company { Name = dto.Name, Address = dto.Address, IsApproved = false };
+        var company = new Company { Name = dto.Name, Address = dto.Address, Phone = dto.Phone, Email = dto.Email, Description = dto.Description, IsApproved = false };
         _db.Companies.Add(company);
         await _db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = company.Id }, new CompanyDto(company.Id, company.Name, company.Address, company.IsApproved));
+        return CreatedAtAction(nameof(GetById), new { id = company.Id }, new CompanyDto(company.Id, company.Name, company.Address, company.IsApproved, company.Phone, company.Email, company.Description));
     }
 
     [HttpGet]
     public async Task<IEnumerable<CompanyDto>> GetAll()
-        => await _db.Companies.Select(c => new CompanyDto(c.Id, c.Name, c.Address, c.IsApproved)).ToListAsync();
+        => await _db.Companies.Select(c => new CompanyDto(c.Id, c.Name, c.Address, c.IsApproved, c.Phone, c.Email, c.Description)).ToListAsync();
 
     [HttpGet("approved")]
     [Authorize(Roles="Student,Admin,UniversitySupervisor,CompanySupervisor")]
@@ -40,6 +40,6 @@ public class CompaniesController : ControllerBase
     {
         var c = await _db.Companies.FindAsync(id);
         if (c == null) return NotFound();
-        return new CompanyDto(c.Id, c.Name, c.Address, c.IsApproved);
+        return new CompanyDto(c.Id, c.Name, c.Address, c.IsApproved, c.Phone, c.Email, c.Description);
     }
 }

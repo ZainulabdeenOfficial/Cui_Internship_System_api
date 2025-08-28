@@ -25,6 +25,11 @@ import Reports from './components/Reports/ReportList';
 import Certificates from './components/Certificates/CertificateList';
 import Profile from './components/Profile/Profile';
 
+// Management Components
+import StudentProfile from './components/Students/StudentProfile';
+import CompanyManagement from './components/Companies/CompanyManagement';
+import UniversitySupervisorManagement from './components/Supervisors/UniversitySupervisorManagement';
+
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ 
   children, 
@@ -106,6 +111,23 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="profile" element={<Profile />} />
+
+            {/* Management Routes */}
+            <Route path="student-profile" element={
+              <ProtectedRoute allowedRoles={['Student']}>
+                <StudentProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="company-management" element={
+              <ProtectedRoute allowedRoles={['CompanySupervisor']}>
+                <CompanyManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="university-supervisor-management" element={
+              <ProtectedRoute allowedRoles={['UniversitySupervisor']}>
+                <UniversitySupervisorManagement />
+              </ProtectedRoute>
+            } />
           </Route>
 
           {/* Catch all route */}

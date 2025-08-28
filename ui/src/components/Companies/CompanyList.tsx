@@ -57,9 +57,9 @@ const CompanyList: React.FC = () => {
     isApproved: true
   });
 
-  const { data: companies, isLoading } = useQuery('companies', apiService.getCompanies);
+  const { data: companies, isLoading } = useQuery('companies', () => apiService.getCompanies());
 
-  const createCompanyMutation = useMutation(apiService.createCompany, {
+  const createCompanyMutation = useMutation((companyData: any) => apiService.createCompany(companyData), {
     onSuccess: () => {
       queryClient.invalidateQueries('companies');
       setOpenDialog(false);

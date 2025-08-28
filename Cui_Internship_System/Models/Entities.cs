@@ -30,6 +30,9 @@ public class Company : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
+    public string? Phone { get; set; } // New contact phone
+    public string? Email { get; set; } // New contact email
+    public string? Description { get; set; } // New description field
     public bool IsApproved { get; set; }
     public ICollection<Internship> Internships { get; set; } = new List<Internship>();
 }
@@ -70,6 +73,7 @@ public class Internship : BaseEntity
     public FinalReport? FinalReport { get; set; }
     public OfferLetter? OfferLetter { get; set; }
     public Certificate? Certificate { get; set; }
+    public ICollection<Grade> Grades { get; set; } = new List<Grade>();
 }
 
 public class Attendance : BaseEntity
@@ -115,4 +119,16 @@ public class OfferLetter : BaseEntity
     public int InternshipId { get; set; }
     public Internship? Internship { get; set; }
     public string FileUrl { get; set; } = string.Empty;
+}
+
+public class Grade : BaseEntity
+{
+    public int InternshipId { get; set; }
+    public Internship? Internship { get; set; }
+    public string Component { get; set; } = string.Empty; // e.g., "Attendance", "Weekly Reports", "Final Report", "Overall"
+    public decimal Score { get; set; } // e.g., 85.5
+    public decimal MaxScore { get; set; } = 100; // e.g., 100
+    public string? Comments { get; set; }
+    public string GradedBy { get; set; } = string.Empty; // "UniversitySupervisor" or "CompanySupervisor"
+    public int? GradedById { get; set; } // ID of the supervisor who graded
 }

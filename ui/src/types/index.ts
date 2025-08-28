@@ -176,3 +176,44 @@ export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
 }
+
+export interface Grade {
+  id: number;
+  internshipId: number;
+  component: string;
+  score: number;
+  maxScore: number;
+  comments?: string;
+  gradedBy: string;
+  gradedById?: number;
+  createdAt: string;
+  updatedAt?: string;
+  percentage?: number;
+}
+
+export interface GradeCreateRequest {
+  component: string;
+  score: number;
+  maxScore?: number;
+  comments?: string;
+}
+
+export interface GradeUpdateRequest {
+  score: number;
+  maxScore?: number;
+  comments?: string;
+}
+
+export interface SupervisorInfo {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface StudentSupervisors {
+  internshipId: number;
+  companyName: string;
+  status: string;
+  universitySupervisor?: SupervisorInfo;
+  companySupervisor?: SupervisorInfo;
+}

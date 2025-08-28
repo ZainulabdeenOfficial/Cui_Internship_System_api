@@ -31,13 +31,15 @@ const UniversitySupervisorDashboard: React.FC = () => {
   // Fetch assigned students/internships
   const { data: assignedStudents, isLoading } = useQuery(
     'university-students',
-    apiService.getUniversityStudents
+    () => apiService.getUniversityStudents(),
+    { refetchInterval: 5000, refetchOnWindowFocus: true }
   );
 
   // Fetch weekly reports
   const { data: weeklyReports } = useQuery(
     'weekly-reports-university',
-    () => apiService.getWeeklyReports()
+    () => apiService.getWeeklyReports(),
+    { refetchInterval: 5000, refetchOnWindowFocus: true }
   );
 
   const getStats = () => {

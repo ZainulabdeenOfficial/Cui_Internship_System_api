@@ -6,3 +6,5 @@ public record CreateUniversitySupervisorDto(string FullName, string Email, strin
 public record SupervisorAssignmentDto(int InternshipId, int? CompanySupervisorId, int? UniversitySupervisorId);
 public record CertificateGenerationDto(int StudentId, string CertificateNumber);
 public record CreateStudentDto(string FullName, string Email, string Password, string RegistrationNumber, bool AutoApprove = true);
+public record AssignUniversitySupervisorDto(int UniversitySupervisorId);
+public record AssignSupervisorDto(int SupervisorId);

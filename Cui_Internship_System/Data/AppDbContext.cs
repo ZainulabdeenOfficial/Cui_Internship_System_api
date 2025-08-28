@@ -19,6 +19,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole, str
     public DbSet<FinalReport> FinalReports => Set<FinalReport>();
     public DbSet<Certificate> Certificates => Set<Certificate>();
     public DbSet<OfferLetter> OfferLetters => Set<OfferLetter>();
+    public DbSet<Grade> Grades => Set<Grade>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -47,5 +48,18 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole, str
         builder.Entity<Attendance>()
             .HasIndex(a => new { a.InternshipId, a.Date })
             .IsUnique();
+
+        builder.Entity<Grade>()
+            .HasOne(g => g.Internship)
+            .WithMany(i => i.Grades)
+            .HasForeignKey(g => g.InternshipId);
+
+        // Match existing migration decimal(18,2) while removing warnings
+        builder.Entity<Grade>()
+            .Property(g => g.Score)
+            .HasPrecision(18, 2);
+        builder.Entity<Grade>()
+            .Property(g => g.MaxScore)
+            .HasPrecision(18, 2);
     }
 }
