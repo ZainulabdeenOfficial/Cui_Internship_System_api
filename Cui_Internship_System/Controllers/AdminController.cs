@@ -31,6 +31,27 @@ public class AdminController : ControllerBase
         return Ok(new { company.Id, company.IsApproved });
     }
 
+    [HttpPost("companies")]
+    public async Task<IActionResult> CreateCompany(CreateCompanyDto dto)
+    {
+        var exists = await _db.Companies.AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower());
+        if (exists) return BadRequest("Company already exists");
+        var company = new Company { Name = dto.Name, Address = dto.Address, IsApproved = true }; // admin-created auto approved
+        _db.Companies.Add(company);
+        await _db.SaveChangesAsync();
+        return Ok(new { company.Id, company.Name, company.IsApproved });
+    }
+
+    [HttpDelete("companies/{id}")]
+    public async Task<IActionResult> DeleteCompany(int id)
+    {
+        var company = await _db.Companies.FindAsync(id);
+        if (company == null) return NotFound();
+        _db.Companies.Remove(company);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     // Students
     [HttpGet("students")] public async Task<IActionResult> GetStudents()
     {
@@ -43,6 +64,32 @@ public class AdminController : ControllerBase
         var s = await _db.Students.FindAsync(id); if (s == null) return NotFound(); s.IsApproved = dto.Approve; await _db.SaveChangesAsync(); return Ok(new { s.Id, s.IsApproved });
     }
 
+    [HttpPost("students")] public async Task<IActionResult> CreateStudent(CreateStudentDto dto)
+    {
+        if(await _userManager.FindByEmailAsync(dto.Email) != null) return BadRequest("Email already exists");
+        var regUpper = dto.RegistrationNumber.ToUpperInvariant();
+        if(await _db.Students.AnyAsync(s => s.RegistrationNumber.ToUpper() == regUpper)) return BadRequest("RegistrationNumber already exists");
+        var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email, FullName = dto.FullName, MustChangePassword = true };
+        var created = await _userManager.CreateAsync(user, dto.Password);
+        if(!created.Succeeded) return BadRequest(created.Errors);
+        if(!await _roleManager.RoleExistsAsync("Student")) await _roleManager.CreateAsync(new IdentityRole("Student"));
+        await _userManager.AddToRoleAsync(user, "Student");
+        _db.Students.Add(new Student { UserId = user.Id, RegistrationNumber = regUpper, IsApproved = dto.AutoApprove });
+        await _db.SaveChangesAsync();
+        return Ok(new { user.Id, user.Email, regUpper });
+    }
+
+    [HttpDelete("students/{id}")] public async Task<IActionResult> DeleteStudent(int id)
+    {
+        var student = await _db.Students.Include(s=> s.User).FirstOrDefaultAsync(s=> s.Id == id);
+        if(student == null) return NotFound();
+        var user = student.User;
+        _db.Students.Remove(student);
+        if(user != null) await _userManager.DeleteAsync(user);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     // Company Supervisors
     [HttpGet("supervisors/company")] public async Task<IActionResult> GetCompanySupervisors()
     {
@@ -53,6 +100,17 @@ public class AdminController : ControllerBase
     [HttpPut("supervisors/company/{id}/approve")] public async Task<IActionResult> ApproveCompanySupervisor(int id, ApprovalDto dto)
     {
         var sup = await _db.CompanySupervisors.FindAsync(id); if (sup == null) return NotFound(); sup.IsApproved = dto.Approve; await _db.SaveChangesAsync(); return Ok(new { sup.Id, sup.IsApproved });
+    }
+
+    [HttpDelete("supervisors/university/{id}")] public async Task<IActionResult> DeleteUniversitySupervisor(int id)
+    {
+        var sup = await _db.UniversitySupervisors.Include(s=> s.User).FirstOrDefaultAsync(s=> s.Id == id);
+        if(sup == null) return NotFound();
+        var user = sup.User;
+        _db.UniversitySupervisors.Remove(sup);
+        if(user != null) await _userManager.DeleteAsync(user);
+        await _db.SaveChangesAsync();
+        return NoContent();
     }
 
     // University Supervisors (activate/deactivate)
@@ -106,7 +164,7 @@ public class AdminController : ControllerBase
         return Ok(new { weekly, final, attendance });
     }
 
-    // Issue certificate by studentId (latest internship) as per spec POST /admin/certificates/{studentId}
+    // Issue certificate by studentId (latest internship)
     [HttpPost("certificates/{studentId}")] public async Task<IActionResult> IssueCertificate(int studentId)
     {
         var internship = await _db.Internships.Include(i=> i.Certificate).Where(i=> i.StudentId == studentId).OrderByDescending(i=> i.Id).FirstOrDefaultAsync();

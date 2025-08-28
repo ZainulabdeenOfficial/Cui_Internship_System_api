@@ -71,7 +71,7 @@ const StudentDashboard: React.FC = () => {
   const queryClient = useQueryClient();
 
   // Fetch data
-  const { data: internships, isLoading: internshipsLoading } = useQuery('student-internships', apiService.getInternships);
+  const { data: internships, isLoading: internshipsLoading } = useQuery('student-internships', apiService.getMyInternships);
   const { data: attendance, isLoading: attendanceLoading } = useQuery(
     ['student-attendance', user?.id],
     () => {

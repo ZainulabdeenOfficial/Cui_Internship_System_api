@@ -95,16 +95,17 @@ builder.Services.AddAuthentication(o =>
 
 builder.Services.AddAuthorization();
 
-var allowedOrigins = config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-
+// DEV-OPEN CORS: allow any origin (dynamic) with credentials for easier local testing.
+// NOTE: For production tighten this to explicit origins.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy
+            .SetIsOriginAllowed(_ => true) // allow all origins dynamically
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // required if frontend sends credentials (cookies) or you later add them
     });
     options.AddPolicy("Open", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });

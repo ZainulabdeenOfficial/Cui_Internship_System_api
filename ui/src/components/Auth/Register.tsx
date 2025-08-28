@@ -38,8 +38,34 @@ const Register: React.FC = () => {
     e.preventDefault();
     setError('');
 
+    if (!formData.fullName.trim()) {
+      setError('Full name is required');
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setError('Email is required');
+      return;
+    }
+
+    if (!formData.role) {
+      setError('Role is required');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      return;
+    }
+
+    // Password validation
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      setError('Password must contain at least one uppercase letter, one lowercase letter, and one number');
       return;
     }
 
@@ -48,24 +74,51 @@ const Register: React.FC = () => {
       return;
     }
 
+    if (formData.role === 'Student' && formData.registrationNumber) {
+      const pattern = /^[A-Z]{2}[0-9]{2}-[A-Z]{3,}-[0-9]{3}$/i;
+      if (!pattern.test(formData.registrationNumber)) {
+        setError('Registration number format is invalid. Expected format: FA22-BCS-090');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
       const registerData = {
-        fullName: formData.fullName,
+        FullName: formData.fullName,
         email: formData.email,
         password: formData.password,
         role: formData.role,
         ...(formData.role === 'Student' && { registrationNumber: formData.registrationNumber })
       };
 
-      await apiService.register(registerData);
+      console.log('Sending registration data:', registerData);
+      const response = await apiService.register(registerData);
       
-      // Auto-login after successful registration
+      // For students, show approval message instead of auto-login
+      if (formData.role === 'Student') {
+        setError(''); // Clear any previous errors
+        // Show success message
+        alert('Registration submitted successfully! Please wait for admin approval before logging in.');
+        // Clear form
+        setFormData({
+          fullName: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          role: '',
+          registrationNumber: ''
+        });
+        return;
+      }
+      
+      // Auto-login for other roles
       await login(formData.email, formData.password);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      console.log('Registration error:', err.response?.data);
+      setError(err.response?.data?.message || err.response?.data || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

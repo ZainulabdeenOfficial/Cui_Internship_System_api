@@ -15,8 +15,7 @@ import {
   Button,
   Chip,
   Tabs,
-  Tab,
-  Alert
+  Tab
 } from '@mui/material';
 import {
   People,
@@ -53,7 +52,6 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
   const queryClient = useQueryClient();
 
@@ -202,29 +200,29 @@ const AdminDashboard: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {students?.map((student: any) => (
+                {students && students.length > 0 ? students.map((student: any) => (
                   <TableRow key={student.id}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <School />
-                        {student.user?.fullName}
+                        {student.Name}
                       </Box>
                     </TableCell>
-                    <TableCell>{student.user?.email}</TableCell>
-                    <TableCell>{student.registrationNumber}</TableCell>
+                    <TableCell>{student.Email}</TableCell>
+                    <TableCell>{student.RegistrationNumber}</TableCell>
                     <TableCell>
                       <Chip
-                        label={student.isApproved ? 'Approved' : 'Pending'}
-                        color={student.isApproved ? 'success' : 'warning' as any}
+                        label={student.IsApproved ? 'Approved' : 'Pending'}
+                        color={student.IsApproved ? 'success' : 'warning' as any}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      {!student.isApproved && (
+                      {!student.IsApproved && (
                         <Button
                           size="small"
                           variant="outlined"
-                          onClick={() => handleApproveStudent(student.id)}
+                          onClick={() => handleApproveStudent(student.Id)}
                           disabled={approveStudentMutation.isLoading}
                         >
                           Approve
@@ -232,7 +230,13 @@ const AdminDashboard: React.FC = () => {
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      No students found
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -254,7 +258,7 @@ const AdminDashboard: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {companies?.map((company: any) => (
+                {companies && companies.length > 0 ? companies.map((company: any) => (
                   <TableRow key={company.id}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -281,7 +285,13 @@ const AdminDashboard: React.FC = () => {
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center">
+                      No companies found
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </TableContainer>

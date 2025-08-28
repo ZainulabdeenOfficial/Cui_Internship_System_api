@@ -18,6 +18,25 @@ public class StudentsController : ControllerBase
 
     private string? CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+    [HttpGet]
+    [Authorize(Roles="Admin")]
+    public async Task<IActionResult> GetAll()
+    {
+        var students = await _db.Students
+            .Include(s => s.User)
+            .Select(s => new
+            {
+                s.Id,
+                s.RegistrationNumber,
+                Name = s.User!.FullName,
+                Email = s.User.Email,
+                s.IsApproved
+            })
+            .ToListAsync();
+        
+        return Ok(students);
+    }
+
     [HttpGet("me/internships")]
     public async Task<IActionResult> MyInternships()
     {

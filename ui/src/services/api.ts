@@ -5,7 +5,6 @@ import {
   RegisterRequest, 
   Internship, 
   Company, 
-  Student,
   Attendance,
   WeeklyReport,
   FinalReport,
@@ -60,6 +59,12 @@ class ApiService {
     );
   }
 
+  // Seed endpoint
+  async seed(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/seed');
+    return response.data;
+  }
+
   // Auth endpoints
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response: AxiosResponse<AuthResponse> = await this.api.post('/auth/login', credentials);
@@ -107,43 +112,31 @@ class ApiService {
   }
 
   async getPendingCompanies(): Promise<Company[]> {
-    const response: AxiosResponse<Company[]> = await this.api.get('/companies/pending');
+    const response: AxiosResponse<Company[]> = await this.api.get('/admin/companies/pending');
     return response.data;
   }
 
-  async createCompany(companyData: Partial<Company>): Promise<Company> {
-    const response: AxiosResponse<Company> = await this.api.post('/companies', companyData);
-    return response.data;
-  }
 
-  async updateCompany(id: number, companyData: Partial<Company>): Promise<Company> {
-    const response: AxiosResponse<Company> = await this.api.put(`/companies/${id}`, companyData);
-    return response.data;
-  }
-
-  async deleteCompany(id: number): Promise<void> {
-    await this.api.delete(`/companies/${id}`);
-  }
 
   async approveCompany(id: number): Promise<void> {
-    await this.api.post(`/companies/${id}/approve`);
+    await this.api.put(`/admin/companies/${id}/approve`, { approve: true });
   }
 
   async rejectCompany(id: number): Promise<void> {
-    await this.api.post(`/companies/${id}/reject`);
+    await this.api.put(`/admin/companies/${id}/approve`, { approve: false });
   }
 
-  // Student endpoints
-  async getStudents(): Promise<Student[]> {
-    const response: AxiosResponse<Student[]> = await this.api.get('/students');
+
+
+  async getMyInternships(): Promise<any[]> {
+    const response: AxiosResponse<any[]> = await this.api.get('/students/me/internships');
     return response.data;
   }
 
-
-
-
-
-
+  async getStudents(): Promise<any[]> {
+    const response: AxiosResponse<any[]> = await this.api.get('/students');
+    return response.data;
+  }
 
   // Admin endpoints
   async getDashboardStats(): Promise<any> {
@@ -164,6 +157,53 @@ class ApiService {
   async getCertificate(internshipId: number): Promise<Certificate> {
     const response: AxiosResponse<Certificate> = await this.api.get(`/certificates/${internshipId}`);
     return response.data;
+  }
+
+  async createStudent(studentData: any): Promise<void> {
+    await this.api.post('/admin/students', studentData);
+  }
+
+  async deleteStudent(id: string): Promise<void> {
+    await this.api.delete(`/admin/students/${id}`);
+  }
+
+  async createCompany(companyData: any): Promise<void> {
+    await this.api.post('/admin/companies', companyData);
+  }
+
+  async deleteCompany(id: number): Promise<void> {
+    await this.api.delete(`/admin/companies/${id}`);
+  }
+
+  // Supervisor management
+  async getCompanySupervisors(): Promise<any[]> {
+    const response: AxiosResponse<any[]> = await this.api.get('/admin/supervisors/company');
+    return response.data;
+  }
+
+  async approveCompanySupervisor(id: number, approve: boolean): Promise<void> {
+    await this.api.put(`/admin/supervisors/company/${id}/approve`, { approve });
+  }
+
+  async createCompanySupervisor(supervisorData: any): Promise<void> {
+    await this.api.post('/admin/supervisors/company', supervisorData);
+  }
+
+  async getUniversitySupervisors(): Promise<any[]> {
+    const response: AxiosResponse<any[]> = await this.api.get('/admin/supervisors/university');
+    return response.data;
+  }
+
+  async approveUniversitySupervisor(id: number, approve: boolean): Promise<void> {
+    await this.api.put(`/admin/supervisors/university/${id}/approve`, { approve });
+  }
+
+  async createUniversitySupervisor(supervisorData: any): Promise<void> {
+    await this.api.post('/admin/supervisors/university', supervisorData);
+  }
+
+  async deleteUniversitySupervisor(id: number): Promise<void> {
+    await this.api.delete(`/admin/supervisors/university/${id}`);
   }
 
   // Student endpoints
@@ -256,6 +296,40 @@ class ApiService {
     const response: AxiosResponse<any> = await this.api.get(`/university-supervisors/attendance/${internshipId}`);
     return response.data;
   }
+
+  // Attendance endpoints
+  async getAttendance(): Promise<Attendance[]> {
+    const response: AxiosResponse<Attendance[]> = await this.api.get('/attendance');
+    return response.data;
+  }
+
+  async markAttendanceGeneral(attendanceData: AttendanceRequest): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/attendance', attendanceData);
+    return response.data;
+  }
+
+  async getAttendanceForInternship(internshipId: number): Promise<Attendance[]> {
+    const response: AxiosResponse<Attendance[]> = await this.api.get(`/attendance/${internshipId}`);
+    return response.data;
+  }
+
+  // Reports endpoints
+  async getReports(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/reports');
+    return response.data;
+  }
+
+  async getWeeklyReportsGeneral(): Promise<WeeklyReport[]> {
+    const response: AxiosResponse<WeeklyReport[]> = await this.api.get('/reports/weekly');
+    return response.data;
+  }
+
+  async getFinalReportsGeneral(): Promise<FinalReport[]> {
+    const response: AxiosResponse<FinalReport[]> = await this.api.get('/reports/final');
+    return response.data;
+  }
+
+
 }
 
 export const apiService = new ApiService();

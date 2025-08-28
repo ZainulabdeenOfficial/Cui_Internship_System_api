@@ -1,10 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Box } from '@mui/material';
 
 // Contexts
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -28,28 +24,6 @@ import Attendance from './components/Attendance/AttendanceList';
 import Reports from './components/Reports/ReportList';
 import Certificates from './components/Certificates/CertificateList';
 import Profile from './components/Profile/Profile';
-
-// Create a theme instance
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
-
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ 
@@ -89,65 +63,56 @@ const RoleDashboard: React.FC = () => {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <CssBaseline />
-          <AuthProvider>
-            <Router>
-              <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  
-                  {/* Protected Routes */}
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Layout />
-                    </ProtectedRoute>
-                  }>
-                    <Route index element={<Navigate to="/dashboard" replace />} />
-                    <Route path="dashboard" element={<RoleDashboard />} />
-                    
-                    {/* Student Routes */}
-                    <Route path="companies" element={
-                      <ProtectedRoute allowedRoles={['Student', 'Admin']}>
-                        <Companies />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="internships" element={
-                      <ProtectedRoute allowedRoles={['Student', 'Admin']}>
-                        <Internships />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="attendance" element={
-                      <ProtectedRoute allowedRoles={['Student', 'CompanySupervisor', 'UniversitySupervisor', 'Admin']}>
-                        <Attendance />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="reports" element={
-                      <ProtectedRoute allowedRoles={['Student', 'CompanySupervisor', 'UniversitySupervisor', 'Admin']}>
-                        <Reports />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="certificates" element={
-                      <ProtectedRoute allowedRoles={['Student', 'Admin']}>
-                        <Certificates />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="profile" element={<Profile />} />
-                  </Route>
-                  
-                  {/* Catch all route */}
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </Box>
-            </Router>
-          </AuthProvider>
-        </LocalizationProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <AuthProvider>
+      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Protected Routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<RoleDashboard />} />
+
+            {/* Student Routes */}
+            <Route path="companies" element={
+              <ProtectedRoute allowedRoles={['Student', 'Admin']}>
+                <Companies />
+              </ProtectedRoute>
+            } />
+            <Route path="internships" element={
+              <ProtectedRoute allowedRoles={['Student', 'Admin']}>
+                <Internships />
+              </ProtectedRoute>
+            } />
+            <Route path="attendance" element={
+              <ProtectedRoute allowedRoles={['Student', 'CompanySupervisor', 'UniversitySupervisor', 'Admin']}>
+                <Attendance />
+              </ProtectedRoute>
+            } />
+            <Route path="reports" element={
+              <ProtectedRoute allowedRoles={['Student', 'CompanySupervisor', 'UniversitySupervisor', 'Admin']}>
+                <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="certificates" element={
+              <ProtectedRoute allowedRoles={['Student', 'Admin']}>
+                <Certificates />
+              </ProtectedRoute>
+            } />
+            <Route path="profile" element={<Profile />} />
+          </Route>
+
+          {/* Catch all route */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Box>
+    </AuthProvider>
   );
 }
 
