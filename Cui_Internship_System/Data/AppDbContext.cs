@@ -1,10 +1,11 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Cui_Internship_System.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 
 namespace Cui_Internship_System.Data;
 
+// Unified application DbContext: Identity + domain entities
 public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole, string>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
@@ -23,8 +24,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole, str
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        base.OnModelCreating(builder);
+        base.OnModelCreating(builder); // includes Identity schema
 
+        // Domain relationships
         builder.Entity<Internship>()
             .HasOne(i => i.Student)
             .WithMany(s => s.Internships)
@@ -54,7 +56,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole, str
             .WithMany(i => i.Grades)
             .HasForeignKey(g => g.InternshipId);
 
-        // Match existing migration decimal(18,2) while removing warnings
         builder.Entity<Grade>()
             .Property(g => g.Score)
             .HasPrecision(18, 2);

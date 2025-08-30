@@ -39,7 +39,6 @@ public class ReportsController : ControllerBase
     {
         var report = await _db.WeeklyReports.Include(r=> r.Internship).FirstOrDefaultAsync(r=> r.Id == id);
         if (report == null) return NotFound();
-        // Optionally verify reviewer is assigned supervisor
         report.Status = dto.Status;
         report.SupervisorComments = dto.Comments;
         await _db.SaveChangesAsync();

@@ -41,12 +41,9 @@ public class StudentsController : ControllerBase
     public async Task<IActionResult> MyInternships()
     {
         var student = await _db.Students
-            .Include(s => s.Internships)
-                .ThenInclude(i=> i.Company)
-            .Include(s => s.Internships)
-                .ThenInclude(i => i.UniversitySupervisor)!.ThenInclude(us => us!.User)
-            .Include(s => s.Internships)
-                .ThenInclude(i => i.Grades)
+            .Include(s => s.Internships)!.ThenInclude(i=> i.Company)
+            .Include(s => s.Internships)!.ThenInclude(i => i.UniversitySupervisor)!.ThenInclude(us => us!.User)
+            .Include(s => s.Internships)!.ThenInclude(i => i.Grades)
             .FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
         if(student == null) return NotFound();
         return Ok(student.Internships.Select(i => new { i.Id, Company = i.Company!.Name, i.Status, i.StartDate, i.EndDate, UniversitySupervisor = i.UniversitySupervisor?.User?.FullName, Grades = i.Grades.Select(g=> new { g.Id, g.Component, g.Score, g.MaxScore }) }));
@@ -55,29 +52,14 @@ public class StudentsController : ControllerBase
     [HttpGet("attendance/{internshipId}")]
     public async Task<IActionResult> GetAttendance(int internshipId)
     {
-        var student = await _db.Students
-            .Include(s => s.Internships)
-            .FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
-        
+        var student = await _db.Students.Include(s => s.Internships).FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
         if (student == null) return NotFound();
-
         var internship = student.Internships.FirstOrDefault(i => i.Id == internshipId);
         if (internship == null) return NotFound("Internship not found");
 
-        var attendance = await _db.Attendances
-            .Where(a => a.InternshipId == internshipId)
+        var attendance = await _db.Attendances.Where(a => a.InternshipId == internshipId)
             .OrderByDescending(a => a.Date)
-            .Select(a => new
-            {
-                a.Id,
-                a.Date,
-                a.CheckInTime,
-                a.CheckOutTime,
-                a.Notes,
-                a.Remarks,
-                Status = !string.IsNullOrEmpty(a.CheckInTime) && !string.IsNullOrEmpty(a.CheckOutTime) ? "Complete" :
-                        !string.IsNullOrEmpty(a.CheckInTime) ? "Checked In" : "Absent"
-            })
+            .Select(a => new { a.Id, a.Date, a.CheckInTime, a.CheckOutTime, a.Notes, a.Remarks, Status = !string.IsNullOrEmpty(a.CheckInTime) && !string.IsNullOrEmpty(a.CheckOutTime) ? "Complete" : !string.IsNullOrEmpty(a.CheckInTime) ? "Checked In" : "Absent" })
             .ToListAsync();
 
         return Ok(attendance);
@@ -86,111 +68,53 @@ public class StudentsController : ControllerBase
     [HttpGet("certificate/{internshipId}")]
     public async Task<IActionResult> GetCertificate(int internshipId)
     {
-        var student = await _db.Students
-            .Include(s => s.Internships)
-            .ThenInclude(i => i.Certificate)
-            .FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
-        
+        var student = await _db.Students.Include(s => s.Internships).ThenInclude(i => i.Certificate).FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
         if (student == null) return NotFound();
-
         var internship = student.Internships.FirstOrDefault(i => i.Id == internshipId);
         if (internship == null) return NotFound("Internship not found");
-
         if (internship.Certificate == null) return NotFound("Certificate not found");
-
         return Ok(internship.Certificate);
     }
 
     [HttpPost("companies")]
     public async Task<IActionResult> SubmitCompanyRequest(CompanyRequestDto dto)
     {
-        var student = await _db.Students
-            .FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
-        
+        var student = await _db.Students.FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
         if (student == null) return NotFound();
-
-        var existingCompany = await _db.Companies
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == dto.Name.ToLower());
-        
+        var existingCompany = await _db.Companies.FirstOrDefaultAsync(c => c.Name.ToLower() == dto.Name.ToLower());
         if (existingCompany != null) return BadRequest("Company already exists");
-
-        var company = new Company
-        {
-            Name = dto.Name,
-            Address = dto.Address,
-            Phone = dto.Phone,
-            Email = dto.Email,
-            Description = dto.Description,
-            IsApproved = false // Requires admin approval
-        };
-
+        var company = new Company { Name = dto.Name, Address = dto.Address, Phone = dto.Phone, Email = dto.Email, Description = dto.Description, IsApproved = false };
         _db.Companies.Add(company);
         await _db.SaveChangesAsync();
-
         return Ok(new { message = "Company request submitted successfully. Please wait for admin approval.", companyId = company.Id });
     }
 
     [HttpPost("reports/weekly")]
     public async Task<IActionResult> SubmitWeeklyReport(WeeklyReportDto dto)
     {
-        var student = await _db.Students
-            .Include(s => s.Internships)
-            .FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
-        
+        var student = await _db.Students.Include(s => s.Internships).FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
         if (student == null) return NotFound();
-
-        var activeInternship = student.Internships
-            .FirstOrDefault(i => i.Status == InternshipStatus.Active);
-        
+        var activeInternship = student.Internships.FirstOrDefault(i => i.Status == InternshipStatus.Active);
         if (activeInternship == null) return BadRequest("No active internship found");
-
-        // Check if weekly report already exists for this week
-        var existingReport = await _db.WeeklyReports
-            .FirstOrDefaultAsync(r => r.InternshipId == activeInternship.Id && r.WeekNumber == dto.WeekNumber);
-        
+        var existingReport = await _db.WeeklyReports.FirstOrDefaultAsync(r => r.InternshipId == activeInternship.Id && r.WeekNumber == dto.WeekNumber);
         if (existingReport != null) return BadRequest($"Weekly report for week {dto.WeekNumber} already exists");
-
-        var report = new WeeklyReport
-        {
-            InternshipId = activeInternship.Id,
-            WeekNumber = dto.WeekNumber,
-            Content = dto.Content,
-            Status = ReportStatus.Submitted
-        };
-
+        var report = new WeeklyReport { InternshipId = activeInternship.Id, WeekNumber = dto.WeekNumber, Content = dto.Content, Status = ReportStatus.Submitted };
         _db.WeeklyReports.Add(report);
         await _db.SaveChangesAsync();
-
         return Ok(new { message = "Weekly report submitted successfully", reportId = report.Id });
     }
 
     [HttpPost("reports/final")]
     public async Task<IActionResult> SubmitFinalReport(FinalReportDto dto)
     {
-        var student = await _db.Students
-            .Include(s => s.Internships)
-            .ThenInclude(i => i.FinalReport)
-            .FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
-        
+        var student = await _db.Students.Include(s => s.Internships).ThenInclude(i => i.FinalReport).FirstOrDefaultAsync(s => s.UserId == CurrentUserId);
         if (student == null) return NotFound();
-
-        var activeInternship = student.Internships
-            .FirstOrDefault(i => i.Status == InternshipStatus.Active);
-        
+        var activeInternship = student.Internships.FirstOrDefault(i => i.Status == InternshipStatus.Active);
         if (activeInternship == null) return BadRequest("No active internship found");
-
         if (activeInternship.FinalReport != null) return BadRequest("Final report already submitted");
-
-        var report = new FinalReport
-        {
-            InternshipId = activeInternship.Id,
-            Content = dto.Content,
-            Status = ReportStatus.Submitted
-        };
-
+        var report = new FinalReport { InternshipId = activeInternship.Id, Content = dto.Content, Status = ReportStatus.Submitted };
         _db.FinalReports.Add(report);
         await _db.SaveChangesAsync();
-
         return Ok(new { message = "Final report submitted successfully", reportId = report.Id });
     }
 }

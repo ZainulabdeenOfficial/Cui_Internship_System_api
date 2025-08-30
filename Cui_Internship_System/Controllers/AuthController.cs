@@ -54,47 +54,29 @@ public class AuthController : ControllerBase
 
         if(dto.Role == "Student")
         {
-            _db.Students.Add(new Student{ UserId = user.Id, RegistrationNumber = dto.RegistrationNumber!.ToUpperInvariant(), IsApproved = false });
+            var student = new Student { UserId = user.Id, RegistrationNumber = dto.RegistrationNumber!, IsApproved = false };
+            _db.Students.Add(student);
             await _db.SaveChangesAsync();
-            // Do NOT return token for unapproved student; must wait for admin approval
-            return Accepted(new { message = "Registration submitted. Await admin approval before login." });
         }
 
-        if(dto.Role == "CompanySupervisor")
-        {
-            _db.CompanySupervisors.Add(new CompanySupervisor{ UserId = user.Id, IsApproved = false, CompanyId = 0 });
-        }
-        else if(dto.Role == "UniversitySupervisor")
-        {
-            _db.UniversitySupervisors.Add(new UniversitySupervisor{ UserId = user.Id, IsActive = true });
-        }
-        await _db.SaveChangesAsync();
-
-        var roles = await _userManager.GetRolesAsync(user);
-        var (token, exp) = _jwt.Generate(user, roles);
-        return Ok(new AuthResponse(token, exp, user.Email ?? user.UserName ?? "", roles.First()));
+        return Ok("Registered");
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDto dto)
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResponse>> Login(LoginDto dto)
     {
-        if(string.IsNullOrWhiteSpace(dto.Email)) return Unauthorized();
-        var user = await _userManager.FindByEmailAsync(dto.Email) ?? await _userManager.FindByNameAsync(dto.Email);
-        if(user == null) return Unauthorized();
-
-        // Enforce approval / activation
+        if(string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+            return BadRequest("Email and password required");
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user == null)
+            return Unauthorized("Invalid credentials");
+        var pwdValid = await _userManager.CheckPasswordAsync(user, dto.Password);
+        if (!pwdValid)
+            return Unauthorized("Invalid credentials");
         var roles = await _userManager.GetRolesAsync(user);
-        var student = await _db.Students.FirstOrDefaultAsync(s => s.UserId == user.Id);
-        if(student != null && !student.IsApproved) return Forbid();
-        var compSup = await _db.CompanySupervisors.FirstOrDefaultAsync(s => s.UserId == user.Id);
-        if(compSup != null && !compSup.IsApproved) return Forbid();
-        var uniSup = await _db.UniversitySupervisors.FirstOrDefaultAsync(s => s.UserId == user.Id);
-        if(uniSup != null && !uniSup.IsActive) return Forbid();
-
-        var pw = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
-        if(!pw.Succeeded) return Unauthorized();
-        var (token, exp) = _jwt.Generate(user, roles);
-        return Ok(new AuthResponse(token, exp, user.Email ?? user.UserName ?? "", roles.FirstOrDefault() ?? ""));
+        var (token, expires) = _jwt.Generate(user, roles);
+        return Ok(new AuthResponse(token, expires, user.Email!, roles.FirstOrDefault() ?? ""));
     }
 
     [HttpPost("change-password")]
@@ -103,16 +85,8 @@ public class AuthController : ControllerBase
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
-
         var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
         if (!result.Succeeded) return BadRequest(result.Errors);
-
-        if (user.MustChangePassword)
-        {
-            user.MustChangePassword = false;
-            await _userManager.UpdateAsync(user);
-        }
-
-        return Ok(new { message = "Password changed successfully" });
+        return Ok("Password changed");
     }
 }

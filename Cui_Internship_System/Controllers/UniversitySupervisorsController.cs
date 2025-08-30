@@ -25,11 +25,10 @@ public class UniversitySupervisorsController : ControllerBase
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var supervisor = await _db.UniversitySupervisors
-            .Include(s => s.Internships)
-            .ThenInclude(i => i.Student)
-            .ThenInclude(s => s.User)
-            .Include(s => s.Internships)
-            .ThenInclude(i => i.Company)
+            .Include(s => s.Internships)!.ThenInclude(i => i.Student)!.ThenInclude(s => s.User)
+            .Include(s => s.Internships)!.ThenInclude(i => i.Company)
+            .Include(s => s.Internships)!.ThenInclude(i => i.WeeklyReports)
+            .Include(s => s.Internships)!.ThenInclude(i => i.FinalReport)
             .FirstOrDefaultAsync(s => s.UserId == userId);
 
         if (supervisor == null) return NotFound();
@@ -58,31 +57,15 @@ public class UniversitySupervisorsController : ControllerBase
     public async Task<IActionResult> GetWeeklyReports(int internshipId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var supervisor = await _db.UniversitySupervisors
-            .Include(s => s.Internships)
-            .FirstOrDefaultAsync(s => s.UserId == userId);
-
+        var supervisor = await _db.UniversitySupervisors.Include(s => s.Internships).FirstOrDefaultAsync(s => s.UserId == userId);
         if (supervisor == null) return NotFound();
-
-        var internship = supervisor.Internships
-            .FirstOrDefault(i => i.Id == internshipId);
-
+        var internship = supervisor.Internships.FirstOrDefault(i => i.Id == internshipId);
         if (internship == null) return NotFound("Internship not found");
 
-        var reports = await _db.WeeklyReports
-            .Where(r => r.InternshipId == internshipId)
+        var reports = await _db.WeeklyReports.Where(r => r.InternshipId == internshipId)
             .OrderBy(r => r.WeekNumber)
-            .Select(r => new
-            {
-                r.Id,
-                r.WeekNumber,
-                r.Content,
-                r.Status,
-                r.SupervisorComments,
-                r.CreatedAt
-            })
+            .Select(r => new { r.Id, r.WeekNumber, r.Content, r.Status, r.SupervisorComments, r.CreatedAt })
             .ToListAsync();
-
         return Ok(reports);
     }
 
@@ -102,27 +85,12 @@ public class UniversitySupervisorsController : ControllerBase
     public async Task<IActionResult> GetFinalReport(int internshipId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var supervisor = await _db.UniversitySupervisors
-            .Include(s => s.Internships)
-            .ThenInclude(i => i.FinalReport)
-            .FirstOrDefaultAsync(s => s.UserId == userId);
-
+        var supervisor = await _db.UniversitySupervisors.Include(s => s.Internships)!.ThenInclude(i => i.FinalReport).FirstOrDefaultAsync(s => s.UserId == userId);
         if (supervisor == null) return NotFound();
-
-        var internship = supervisor.Internships
-            .FirstOrDefault(i => i.Id == internshipId);
-
+        var internship = supervisor.Internships.FirstOrDefault(i => i.Id == internshipId);
         if (internship == null) return NotFound("Internship not found");
         if (internship.FinalReport == null) return NotFound("Final report not submitted");
-
-        return Ok(new
-        {
-            internship.FinalReport.Id,
-            internship.FinalReport.Content,
-            internship.FinalReport.Status,
-            internship.FinalReport.SupervisorComments,
-            internship.FinalReport.CreatedAt
-        });
+        return Ok(new { internship.FinalReport.Id, internship.FinalReport.Content, internship.FinalReport.Status, internship.FinalReport.SupervisorComments, internship.FinalReport.CreatedAt });
     }
 
     [HttpPut("reports/final/{reportId}")]

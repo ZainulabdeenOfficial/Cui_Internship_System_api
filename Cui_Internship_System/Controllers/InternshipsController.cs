@@ -21,14 +21,12 @@ public class InternshipsController : ControllerBase
     public async Task<ActionResult<IEnumerable<InternshipDto>>> GetAll()
     {
         var internships = await _db.Internships
-            .Include(i => i.Student)
-            .ThenInclude(s => s.User)
+            .Include(i => i.Student)!.ThenInclude(s => s.User)
             .Include(i => i.Company)
             .Include(i => i.WeeklyReports)
             .Include(i => i.FinalReport)
             .Include(i => i.Certificate)
             .ToListAsync();
-        
         return Ok(internships);
     }
 

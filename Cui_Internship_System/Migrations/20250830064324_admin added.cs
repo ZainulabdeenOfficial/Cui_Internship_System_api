@@ -5,7 +5,7 @@
 namespace Cui_Internship_System.Migrations
 {
     /// <inheritdoc />
-    public partial class LocalAdded : Migration
+    public partial class adminadded : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

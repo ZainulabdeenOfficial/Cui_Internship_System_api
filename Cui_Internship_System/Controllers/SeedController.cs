@@ -23,11 +23,14 @@ public class SeedController : ControllerBase
             if(!await _roleManager.RoleExistsAsync(r))
                 await _roleManager.CreateAsync(new IdentityRole(r));
 
-        if(await _userManager.FindByEmailAsync("admin@local") == null)
+        if(await _userManager.FindByEmailAsync("zu4425@gmail.com") == null)
         {
-            var admin = new ApplicationUser { UserName = "admin@local", Email = "admin@local", FullName = "System Admin" };
-            await _userManager.CreateAsync(admin, "Admin@123");
-            await _userManager.AddToRoleAsync(admin, Roles.Admin);
+            var admin = new ApplicationUser { UserName = "zu4425@gmail.com", Email = "zu4425@gmail.com", FullName = "Super Admin" };
+            var create = await _userManager.CreateAsync(admin, "@17Dec2003");
+            if(create.Succeeded)
+                await _userManager.AddToRoleAsync(admin, Roles.Admin);
+            else
+                return BadRequest(create.Errors);
         }
         return Ok("Seed complete");
     }
